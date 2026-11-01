@@ -1,75 +1,113 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
-const REFRESH_INTERVAL_MS = 13 * 60 * 1000; // 13 min — before the 15-min access token expires
+const REFRESH_INTERVAL_MS = 12 * 60 * 1000; 
+const SESSION_FLAG_KEY = "auth_refresh_done"; 
 
-// Module-level flag prevents the double-invoke in React Strict Mode
-// from firing two simultaneous refresh calls (which would cause a
-// token-rotation race and log the user out immediately).
-let mountRefreshDone = false;
-
-async function refreshSession(): Promise<boolean> {
+async function refreshSession(): Promise<"ok" | "logged_out" | "network_error"> {
   try {
-    // Call the raw fetch directly so we can inspect the HTTP status
     const res = await fetch(
       `${process.env.NEXT_PUBLIC_API_URL!.replace(/\/+$/, "")}/auth/refresh`,
-      { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" } }
+      {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+      }
     );
 
     if (res.ok) {
       const data = await res.json();
       if (data.accessToken) {
         localStorage.setItem("accessToken", data.accessToken);
+        // Re-store user if returned (some backends return updated user on refresh)
+        if (data.user) {
+          localStorage.setItem("authUser", JSON.stringify(data.user));
+        }
         window.dispatchEvent(new Event("auth-change"));
       }
-      return true;
+      return "ok";
     }
 
-    // 401 = no refresh cookie → genuinely logged out
-    if (res.status === 401) return false;
+    // 401 = refresh cookie missing or expired → genuinely logged out
+    if (res.status === 401) return "logged_out";
 
-    // 403 = token mismatch race (Strict Mode) → keep user logged in
-    return true;
+    // 403 = token rotation race (Strict Mode double-invoke) → keep session
+    // 5xx = server error → keep session, retry on next interval
+    return "ok";
   } catch {
-    // Network error → keep user logged in, will retry on next interval
-    return true;
+    // Network error → keep session alive, retry on next interval
+    return "network_error";
   }
 }
 
+function clearSession() {
+  localStorage.removeItem("accessToken");
+  localStorage.removeItem("authUser");
+  sessionStorage.removeItem(SESSION_FLAG_KEY);
+  window.dispatchEvent(new Event("auth-change"));
+}
+
 export default function AuthProvider({ children }: { children: React.ReactNode }) {
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
   useEffect(() => {
     const storedUser = localStorage.getItem("authUser");
+
+    // No user stored → nothing to do
     if (!storedUser) return;
 
-    // Guard against React Strict Mode double-mount
-    if (!mountRefreshDone) {
-      mountRefreshDone = true;
-      refreshSession().then((ok) => {
-        if (!ok) {
-          localStorage.removeItem("accessToken");
-          localStorage.removeItem("authUser");
-          window.dispatchEvent(new Event("auth-change"));
+    // Use sessionStorage flag to prevent double-invoke in React Strict Mode
+    // sessionStorage is per-tab and cleared on tab close, so it correctly
+    // re-runs on a new tab/hard refresh without the module-level variable problem
+    const alreadyRefreshed = sessionStorage.getItem(SESSION_FLAG_KEY);
+
+    if (!alreadyRefreshed) {
+      sessionStorage.setItem(SESSION_FLAG_KEY, "1");
+
+      refreshSession().then((result) => {
+        if (result === "logged_out") {
+          clearSession();
         }
+        // "ok" or "network_error" → keep user logged in
       });
     }
 
-    // Proactively refresh every 13 min to keep the session alive
-    const interval = setInterval(async () => {
+    // Proactive refresh interval — keeps long sessions alive
+    intervalRef.current = setInterval(async () => {
+      // Stop if user logged out in another tab
       if (!localStorage.getItem("authUser")) {
-        clearInterval(interval);
+        if (intervalRef.current) clearInterval(intervalRef.current);
         return;
       }
-      const ok = await refreshSession();
-      if (!ok) {
-        clearInterval(interval);
-        localStorage.removeItem("accessToken");
-        localStorage.removeItem("authUser");
-        window.dispatchEvent(new Event("auth-change"));
+
+      const result = await refreshSession();
+      if (result === "logged_out") {
+        if (intervalRef.current) clearInterval(intervalRef.current);
+        clearSession();
       }
     }, REFRESH_INTERVAL_MS);
 
-    return () => clearInterval(interval);
+    // Sync logout across tabs via storage event
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === "authUser" && e.newValue === null) {
+        // Another tab logged out — clear this tab too
+        if (intervalRef.current) clearInterval(intervalRef.current);
+        localStorage.removeItem("accessToken");
+        window.dispatchEvent(new Event("auth-change"));
+      }
+      if (e.key === "authUser" && e.newValue !== null && e.oldValue === null) {
+        // Another tab logged in — sync this tab
+        window.dispatchEvent(new Event("auth-change"));
+      }
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      window.removeEventListener("storage", handleStorageChange);
+    };
   }, []);
 
   return <>{children}</>;
