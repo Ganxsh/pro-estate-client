@@ -79,7 +79,7 @@ export default function PropertiesPage() {
         <div className="relative mx-auto flex max-w-6xl flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <div className="mb-3 flex w-fit items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-sm">
-              <span className="h-1.5 w-1.5 rounded-full bg-orange-400" />
+              <span className="h-1.5 w-1.5 rounded-full bg-blue-400" />
               {authUser ? `Welcome back, ${authUser.name.split(" ")[0]}` : "Your property hub"}
             </div>
             <h1 className="font-serif text-3xl leading-tight text-white sm:text-4xl lg:text-5xl">
@@ -94,7 +94,7 @@ export default function PropertiesPage() {
             <button
               type="button"
               onClick={() => setCreateOpen(true)}
-              className="inline-flex w-fit items-center gap-2 rounded-full bg-[#f56635] px-6 py-3.5 text-sm font-semibold text-white shadow-lg shadow-orange-500/30 transition hover:bg-[#e95425]"
+              className="inline-flex w-fit items-center gap-2 rounded-full bg-[#021b5f] px-6 py-3.5 text-sm font-semibold text-white shadow-lg shadow-blue-500/30 transition hover:bg-[#021b5f]"
             >
               <Plus size={18} />
               Create Property
@@ -125,7 +125,7 @@ export default function PropertiesPage() {
             <button
               type="button"
               onClick={() => setCreateOpen(true)}
-              className="mt-6 inline-flex items-center gap-2 rounded-full bg-[#f56635] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#e95425]"
+              className="mt-6 inline-flex items-center gap-2 rounded-full bg-[#021b5f] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#021b5f]"
             >
               <Plus size={16} />
               Create Property

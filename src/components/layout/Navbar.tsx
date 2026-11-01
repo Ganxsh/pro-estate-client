@@ -260,7 +260,7 @@ export default function Navbar() {
     type="button"
     onClick={() => setAccountMenuOpen((prev) => !prev)}
     aria-expanded={accountMenuOpen}
-    className="flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
+    className="flex items-center gap-2 cursor-pointer border border-slate-300 active:scale-90 rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
   >
     <span>
       Hi, {authUser.name.split(" ")[0]}
@@ -362,7 +362,7 @@ export default function Navbar() {
     setAccountMenuOpen(false);
     setShowLogoutConfirm(true);
   }}
-  className="flex w-full items-center rounded-xl px-3 py-2.5 text-left text-sm font-medium text-red-600 transition hover:bg-red-50"
+  className="flex w-full cursor-pointer items-center rounded-xl px-3 py-2.5 text-left text-sm font-medium text-red-600 transition hover:bg-red-50"
 >
   Log out
 </button>
@@ -384,7 +384,7 @@ export default function Navbar() {
 <button
   type="button"
   onClick={() => setCreatePropertyOpen(true)}
-  className="group inline-flex items-center gap-2 rounded-xl border border-blue-200 bg-blue-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all duration-300 hover:border-[#1c398e] hover:bg-blue-50 hover:shadow-md"
+  className="group inline-flex items-center gap-2 rounded-xl border border-blue-200 bg-blue-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all duration-300 hover:border-[#1c398e] cursor-pointer active:scale-90 hover:text-blue-50 hover:shadow-md"
 >
   <span>Post property</span>
 
