@@ -264,7 +264,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
                   <button
                     type="submit"
                     disabled={isLoading}
-                    className="group flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#171717] text-sm font-semibold text-white transition hover:bg-[#021b5f] disabled:cursor-not-allowed disabled:opacity-60"
+                    className="group flex h-11 cursor-pointer w-full items-center justify-center gap-2 rounded-xl bg-[#171717] text-sm font-semibold text-white transition hover:bg-[#021b5f] disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {isLoading
                       ? "Please wait..."
